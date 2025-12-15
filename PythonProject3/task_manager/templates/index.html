@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Manager - Управление задачами</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1><i class="fas fa-tasks"></i> Task Manager</h1>
+            <div class="stats">
+                <div class="stat-item">
+                    <span class="stat-label">Всего:</span>
+                    <span id="total-tasks" class="stat-value">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Выполнено:</span>
+                    <span id="completed-tasks" class="stat-value">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">В работе:</span>
+                    <span id="inprogress-tasks" class="stat-value">0</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <div class="sidebar">
+                <div class="card">
+                    <h3><i class="fas fa-plus-circle"></i> Новая задача</h3>
+                    <form id="task-form">
+                        <div class="form-group">
+                            <input type="text" id="title" placeholder="Название задачи*" required>
+                        </div>
+                        <div class="form-group">
+                            <textarea id="description" placeholder="Описание задачи"></textarea>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="priority">Приоритет:</label>
+                                <select id="priority">
+                                    <option value="low">Низкий</option>
+                                    <option value="medium" selected>Средний</option>
+                                    <option value="high">Высокий</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="category">Категория:</label>
+                                <input type="text" id="category" list="categories-list" placeholder="Общая">
+                                <datalist id="categories-list"></datalist>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="due-date">Срок выполнения:</label>
+                            <input type="date" id="due-date">
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Создать задачу
+                        </button>
+                    </form>
+                </div>
+
+                <div class="card">
+                    <h3><i class="fas fa-filter"></i> Фильтры</h3>
+                    <div class="form-group">
+                        <label for="filter-status">Статус:</label>
+                        <select id="filter-status">
+                            <option value="all">Все</option>
+                            <option value="pending">Ожидает</option>
+                            <option value="in_progress">В работе</option>
+                            <option value="completed">Выполнено</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="filter-priority">Приоритет:</label>
+                        <select id="filter-priority">
+                            <option value="all">Все</option>
+                            <option value="low">Низкий</option>
+                            <option value="medium">Средний</option>
+                            <option value="high">Высокий</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="filter-category">Категория:</label>
+                        <select id="filter-category">
+                            <option value="all">Все</option>
+                        </select>
+                    </div>
+                    <button id="apply-filters" class="btn btn-secondary">
+                        <i class="fas fa-check"></i> Применить фильтры
+                    </button>
+                </div>
+            </div>
+
+            <div class="content">
+                <div class="tasks-header">
+                    <h2><i class="fas fa-list-check"></i> Мои задачи</h2>
+                    <div class="search-box">
+                        <input type="text" id="search-input" placeholder="Поиск задач...">
+                        <i class="fas fa-search"></i>
+                    </div>
+                </div>
+
+                <div class="tasks-container" id="tasks-container">
+                    <!-- Задачи будут загружаться здесь -->
+                    <div class="loading" id="loading">
+                        <i class="fas fa-spinner fa-spin"></i> Загрузка задач...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Модальное окно для редактирования -->
+        <div id="edit-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3><i class="fas fa-edit"></i> Редактировать задачу</h3>
+                    <button class="close-btn">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form id="edit-form">
+                        <input type="hidden" id="edit-id">
+                        <div class="form-group">
+                            <input type="text" id="edit-title" placeholder="Название задачи" required>
+                        </div>
+                        <div class="form-group">
+                            <textarea id="edit-description" placeholder="Описание задачи"></textarea>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="edit-status">Статус:</label>
+                                <select id="edit-status">
+                                    <option value="pending">Ожидает</option>
+                                    <option value="in_progress">В работе</option>
+                                    <option value="completed">Выполнено</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="edit-priority">Приоритет:</label>
+                                <select id="edit-priority">
+                                    <option value="low">Низкий</option>
+                                    <option value="medium">Средний</option>
+                                    <option value="high">Высокий</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="edit-category">Категория:</label>
+                                <input type="text" id="edit-category" list="edit-categories-list">
+                                <datalist id="edit-categories-list"></datalist>
+                            </div>
+                            <div class="form-group">
+                                <label for="edit-due-date">Срок выполнения:</label>
+                                <input type="date" id="edit-due-date">
+                            </div>
+                        </div>
+                        <div class="modal-actions">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Сохранить
+                            </button>
+                            <button type="button" class="btn btn-danger" id="delete-btn">
+                                <i class="fas fa-trash"></i> Удалить
+                            </button>
+                            <button type="button" class="btn btn-secondary close-btn">
+                                Отмена
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
