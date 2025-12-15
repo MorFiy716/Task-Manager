@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Manager - Управление задачами</title>
+
+    <!-- Стили -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+    <!-- Иконки Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Шапка -->
+        <header class="header">
+            <h1>
+                <i class="fas fa-tasks"></i>
+                Task Manager
+            </h1>
+
+            <div class="stats">
+                <div class="stat-item">
+                    <span class="stat-label">Всего:</span>
+                    <span id="total-tasks" class="stat-value">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Выполнено:</span>
+                    <span id="completed-tasks" class="stat-value">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Ожидает:</span>
+                    <span id="pending-tasks" class="stat-value">0</span>
+                </div>
+
+                <button id="email-settings-btn" class="btn btn-email">
+                    <i class="fas fa-envelope"></i>
+                    Настройки Email
+                </button>
+            </div>
+        </header>
+
+        <!-- Основной контент -->
+        <div class="main-content">
+            <!-- Левая колонка - создание задачи -->
+            <div class="sidebar">
+                <div class="card">
+                    <h3>
+                        <i class="fas fa-plus-circle"></i>
+                        Новая задача
+                    </h3>
+
+                    <form id="task-form">
+                        <div class="form-group">
+                            <input type="text" id="title" placeholder="Название задачи*" required>
+                        </div>
+
+                        <div class="form-group">
+                            <textarea id="description" placeholder="Описание задачи"></textarea>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="priority">Приоритет:</label>
+                                <select id="priority">
+                                    <option value="low">Низкий</option>
+                                    <option value="medium" selected>Средний</option>
+                                    <option value="high">Высокий</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="due-date">Срок:</label>
+                                <input type="date" id="due-date">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="assigned-email">Email назначения:</label>
+                            <input type="email" id="assigned-email" placeholder="email@example.com">
+                        </div>
+
+                        <div class="checkbox-group">
+                            <label>
+                                <input type="checkbox" id="send-email">
+                                <span>Отправить задачу на email</span>
+                            </label>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i>
+                            Создать задачу
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Фильтры -->
+                <div class="card">
+                    <h3>
+                        <i class="fas fa-filter"></i>
+                        Фильтры
+                    </h3>
+
+                    <div class="form-group">
+                        <label for="filter-status">Статус:</label>
+                        <select id="filter-status">
+                            <option value="all">Все</option>
+                            <option value="pending">Ожидает</option>
+                            <option value="in_progress">В работе</option>
+                            <option value="completed">Выполнено</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="filter-priority">Приоритет:</label>
+                        <select id="filter-priority">
+                            <option value="all">Все</option>
+                            <option value="low">Низкий</option>
+                            <option value="medium">Средний</option>
+                            <option value="high">Высокий</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Правая колонка - список задач -->
+            <div class="content">
+                <div class="tasks-header">
+                    <h2>
+                        <i class="fas fa-list-check"></i>
+                        Мои задачи
+                    </h2>
+
+                    <div class="search-box">
+                        <input type="text" id="search-input" placeholder="Поиск задач...">
+                        <i class="fas fa-search"></i>
+                    </div>
+                </div>
+
+                <!-- Контейнер для задач -->
+                <div class="tasks-container" id="tasks-container">
+                    <!-- Задачи будут загружены сюда -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
