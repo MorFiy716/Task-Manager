@@ -74,11 +74,12 @@ with app.app_context():
 
 # Загружаем настройки email
 def load_email_config():
-    config = EmailConfig.query.first()
-    if config:
-        app.config['EMAIL_CONFIG'] = config.to_dict()
-        app.config['EMAIL_CONFIG']['password'] = config.password
-    return config
+    with app.app_context():
+        config = EmailConfig.query.first()
+        if config:
+            app.config['EMAIL_CONFIG'] = config.to_dict()
+            app.config['EMAIL_CONFIG']['password'] = config.password
+        return config
 
 
 # Отправка email
@@ -124,15 +125,16 @@ def get_tasks():
     status = request.args.get('status', 'all')
     priority = request.args.get('priority', 'all')
 
-    query = Task.query
+    with app.app_context():
+        query = Task.query
 
-    if status != 'all':
-        query = query.filter_by(status=status)
-    if priority != 'all':
-        query = query.filter_by(priority=priority)
+        if status != 'all':
+            query = query.filter_by(status=status)
+        if priority != 'all':
+            query = query.filter_by(priority=priority)
 
-    tasks = query.order_by(Task.created_at.desc()).all()
-    return jsonify([task.to_dict() for task in tasks])
+        tasks = query.order_by(Task.created_at.desc()).all()
+        return jsonify([task.to_dict() for task in tasks])
 
 
 # API: Создать задачу
@@ -147,178 +149,187 @@ def create_task():
         except:
             pass
 
-    task = Task(
-        title=data['title'],
-        description=data.get('description', ''),
-        priority=data.get('priority', 'medium'),
-        due_date=due_date,
-        assigned_email=data.get('assigned_email')
-    )
-
-    db.session.add(task)
-    db.session.commit()
-
-    # Отправляем email если нужно
-    if data.get('send_email') and data.get('assigned_email'):
-        task_data = task.to_dict()
-
-        html = f"""
-        <h2>Новая задача: {task_data['title']}</h2>
-        <p><strong>Описание:</strong> {task_data['description'] or 'Нет описания'}</p>
-        <p><strong>Статус:</strong> {task_data['status']}</p>
-        <p><strong>Приоритет:</strong> {task_data['priority']}</p>
-        <p><strong>Срок:</strong> {task_data['due_date'] or 'Не указан'}</p>
-        """
-
-        text = f"""
-        Новая задача: {task_data['title']}
-        Описание: {task_data['description'] or 'Нет описания'}
-        Статус: {task_data['status']}
-        Приоритет: {task_data['priority']}
-        Срок: {task_data['due_date'] or 'Не указан'}
-        """
-
-        success, message = send_email(
-            data['assigned_email'],
-            f"Новая задача: {task_data['title']}",
-            html,
-            text
+    with app.app_context():
+        task = Task(
+            title=data['title'],
+            description=data.get('description', ''),
+            priority=data.get('priority', 'medium'),
+            due_date=due_date,
+            assigned_email=data.get('assigned_email')
         )
 
-        return jsonify({
-            'task': task.to_dict(),
-            'email_sent': success,
-            'email_message': message
-        })
+        db.session.add(task)
+        db.session.commit()
 
-    return jsonify(task.to_dict())
+        # Отправляем email если нужно
+        if data.get('send_email') and data.get('assigned_email'):
+            task_data = task.to_dict()
+
+            html = f"""
+            <h2>Новая задача: {task_data['title']}</h2>
+            <p><strong>Описание:</strong> {task_data['description'] or 'Нет описания'}</p>
+            <p><strong>Статус:</strong> {task_data['status']}</p>
+            <p><strong>Приоритет:</strong> {task_data['priority']}</p>
+            <p><strong>Срок:</strong> {task_data['due_date'] or 'Не указан'}</p>
+            """
+
+            text = f"""
+            Новая задача: {task_data['title']}
+            Описание: {task_data['description'] or 'Нет описания'}
+            Статус: {task_data['status']}
+            Приоритет: {task_data['priority']}
+            Срок: {task_data['due_date'] or 'Не указан'}
+            """
+
+            success, message = send_email(
+                data['assigned_email'],
+                f"Новая задача: {task_data['title']}",
+                html,
+                text
+            )
+
+            return jsonify({
+                'task': task.to_dict(),
+                'email_sent': success,
+                'email_message': message
+            })
+
+        return jsonify(task.to_dict())
 
 
 # API: Обновить задачу
 @app.route('/api/tasks/<int:task_id>', methods=['PUT'])
 def update_task(task_id):
-    task = Task.query.get_or_404(task_id)
     data = request.json
 
-    if 'title' in data:
-        task.title = data['title']
-    if 'description' in data:
-        task.description = data['description']
-    if 'status' in data:
-        task.status = data['status']
-    if 'priority' in data:
-        task.priority = data['priority']
-    if 'assigned_email' in data:
-        task.assigned_email = data['assigned_email']
-    if 'due_date' in data:
-        try:
-            task.due_date = datetime.strptime(data['due_date'], '%Y-%m-%d') if data['due_date'] else None
-        except:
-            pass
+    with app.app_context():
+        task = Task.query.get_or_404(task_id)
 
-    db.session.commit()
-    return jsonify(task.to_dict())
+        if 'title' in data:
+            task.title = data['title']
+        if 'description' in data:
+            task.description = data['description']
+        if 'status' in data:
+            task.status = data['status']
+        if 'priority' in data:
+            task.priority = data['priority']
+        if 'assigned_email' in data:
+            task.assigned_email = data['assigned_email']
+        if 'due_date' in data:
+            try:
+                task.due_date = datetime.strptime(data['due_date'], '%Y-%m-%d') if data['due_date'] else None
+            except:
+                pass
+
+        db.session.commit()
+        return jsonify(task.to_dict())
 
 
 # API: Удалить задачу
 @app.route('/api/tasks/<int:task_id>', methods=['DELETE'])
 def delete_task(task_id):
-    task = Task.query.get_or_404(task_id)
-    db.session.delete(task)
-    db.session.commit()
-    return jsonify({'success': True})
+    with app.app_context():
+        task = Task.query.get_or_404(task_id)
+        db.session.delete(task)
+        db.session.commit()
+        return jsonify({'success': True})
 
 
 # API: Отправить задачу по email
 @app.route('/api/tasks/<int:task_id>/send', methods=['POST'])
 def send_task_email(task_id):
-    task = Task.query.get_or_404(task_id)
     data = request.json
 
-    email = data.get('email', task.assigned_email)
-    if not email:
-        return jsonify({'error': 'Не указан email'}), 400
+    with app.app_context():
+        task = Task.query.get_or_404(task_id)
 
-    html = f"""
-    <h2>Задача: {task.title}</h2>
-    <p><strong>Описание:</strong> {task.description or 'Нет описания'}</p>
-    <p><strong>Статус:</strong> {task.status}</p>
-    <p><strong>Приоритет:</strong> {task.priority}</p>
-    <p><strong>Срок:</strong> {task.due_date.strftime('%Y-%m-%d') if task.due_date else 'Не указан'}</p>
-    <p><strong>Создана:</strong> {task.created_at.strftime('%Y-%m-%d %H:%M')}</p>
-    """
+        email = data.get('email', task.assigned_email)
+        if not email:
+            return jsonify({'error': 'Не указан email'}), 400
 
-    text = f"""
-    Задача: {task.title}
-    Описание: {task.description or 'Нет описания'}
-    Статус: {task.status}
-    Приоритет: {task.priority}
-    Срок: {task.due_date.strftime('%Y-%m-%d') if task.due_date else 'Не указан'}
-    Создана: {task.created_at.strftime('%Y-%m-%d %H:%M')}
-    """
+        html = f"""
+        <h2>Задача: {task.title}</h2>
+        <p><strong>Описание:</strong> {task.description or 'Нет описания'}</p>
+        <p><strong>Статус:</strong> {task.status}</p>
+        <p><strong>Приоритет:</strong> {task.priority}</p>
+        <p><strong>Срок:</strong> {task.due_date.strftime('%Y-%m-%d') if task.due_date else 'Не указан'}</p>
+        <p><strong>Создана:</strong> {task.created_at.strftime('%Y-%m-%d %H:%M')}</p>
+        """
 
-    success, message = send_email(
-        email,
-        f"Задача: {task.title}",
-        html,
-        text
-    )
+        text = f"""
+        Задача: {task.title}
+        Описание: {task.description or 'Нет описания'}
+        Статус: {task.status}
+        Приоритет: {task.priority}
+        Срок: {task.due_date.strftime('%Y-%m-%d') if task.due_date else 'Не указан'}
+        Создана: {task.created_at.strftime('%Y-%m-%d %H:%M')}
+        """
 
-    return jsonify({
-        'success': success,
-        'message': message
-    })
+        success, message = send_email(
+            email,
+            f"Задача: {task.title}",
+            html,
+            text
+        )
+
+        return jsonify({
+            'success': success,
+            'message': message
+        })
 
 
 # API: Получить статистику
 @app.route('/api/stats', methods=['GET'])
 def get_stats():
-    total = Task.query.count()
-    completed = Task.query.filter_by(status='completed').count()
-    pending = Task.query.filter_by(status='pending').count()
+    with app.app_context():
+        total = Task.query.count()
+        completed = Task.query.filter_by(status='completed').count()
+        pending = Task.query.filter_by(status='pending').count()
 
-    return jsonify({
-        'total': total,
-        'completed': completed,
-        'pending': pending
-    })
+        return jsonify({
+            'total': total,
+            'completed': completed,
+            'pending': pending
+        })
 
 
 # API: Настройки email
 @app.route('/api/email/config', methods=['GET'])
 def get_email_config():
-    config = EmailConfig.query.first()
-    if config:
-        return jsonify(config.to_dict())
-    return jsonify({'configured': False})
+    with app.app_context():
+        config = EmailConfig.query.first()
+        if config:
+            return jsonify(config.to_dict())
+        return jsonify({'configured': False})
 
 
 @app.route('/api/email/config', methods=['POST'])
 def save_email_config():
     data = request.json
 
-    # Удаляем старые настройки
-    EmailConfig.query.delete()
+    with app.app_context():
+        # Удаляем старые настройки
+        EmailConfig.query.delete()
 
-    config = EmailConfig(
-        smtp_server=data.get('smtp_server', 'smtp.gmail.com'),
-        smtp_port=int(data.get('smtp_port', 587)),
-        username=data.get('username', ''),
-        password=data.get('password', ''),
-        from_email=data.get('from_email', data.get('username', '')),
-        use_tls=bool(data.get('use_tls', True))
-    )
+        config = EmailConfig(
+            smtp_server=data.get('smtp_server', 'smtp.gmail.com'),
+            smtp_port=int(data.get('smtp_port', 587)),
+            username=data.get('username', ''),
+            password=data.get('password', ''),
+            from_email=data.get('from_email', data.get('username', '')),
+            use_tls=bool(data.get('use_tls', True))
+        )
 
-    db.session.add(config)
-    db.session.commit()
+        db.session.add(config)
+        db.session.commit()
 
-    # Обновляем конфиг в памяти
-    load_email_config()
+        # Обновляем конфиг в памяти
+        load_email_config()
 
-    return jsonify({
-        'success': True,
-        'config': config.to_dict()
-    })
+        return jsonify({
+            'success': True,
+            'config': config.to_dict()
+        })
 
 
 # API: Тест email
@@ -356,6 +367,21 @@ def test_email():
     })
 
 
+# Глобальная обработка ошибок
+@app.errorhandler(404)
+def not_found_error(error):
+    return jsonify({'error': 'Не найдено'}), 404
+
+
+@app.errorhandler(500)
+def internal_error(error):
+    db.session.rollback()
+    return jsonify({'error': 'Внутренняя ошибка сервера'}), 500
+
+
 if __name__ == '__main__':
-    load_email_config()
+    # Загружаем настройки email при запуске
+    with app.app_context():
+        load_email_config()
+
     app.run(debug=True, host='0.0.0.0', port=5000)
