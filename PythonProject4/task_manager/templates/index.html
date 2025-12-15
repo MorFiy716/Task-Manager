@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Manager - Управление задачами</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1><i class="fas fa-tasks"></i> Task Manager</h1>
+            <div class="stats">
+                <div class="stat-item">
+                    <span class="stat-label">Всего:</span>
+                    <span id="total-tasks" class="stat-value">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Выполнено:</span>
+                    <span id="completed-tasks" class="stat-value">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">В работе:</span>
+                    <span id="inprogress-tasks" class="stat-value">0</span>
+                </div>
+                <button id="email-settings-btn" class="btn btn-email">
+                    <i class="fas fa-envelope"></i> Настройки Email
+                </button>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <div class="sidebar">
+                <div class="card">
+                    <h3><i class="fas fa-plus-circle"></i> Новая задача</h3>
+                    <form id="task-form">
+                        <div class="form-group">
+                            <input type="text" id="title" placeholder="Название задачи*" required>
+                        </div>
+                        <div class="form-group">
+                            <textarea id="description" placeholder="Описание задачи"></textarea>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="priority">Приоритет:</label>
+                                <select id="priority">
+                                    <option value="low">Низкий</option>
+                                    <option value="medium" selected>Средний</option>
+                                    <option value="high">Высокий</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="category">Категория:</label>
+                                <input type="text" id="category" list="categories-list" placeholder="Общая">
+                                <datalist id="categories-list"></datalist>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="due-date">Срок выполнения:</label>
+                                <input type="date" id="due-date">
+                            </div>
+                            <div class="form-group">
+                                <label for="assigned-email">Email назначения:</label>
+                                <input type="email" id="assigned-email" placeholder="email@example.com">
+                            </div>
+                        </div>
+                        <div class="form-group checkbox-group">
+                            <label>
+                                <input type="checkbox" id="send-email">
+                                <span>Отправить задачу на email</span>
+                            </label>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Создать задачу
+                        </button>
+                    </form>
+                </div>
+
+                <div class="card">
+                    <h3><i class="fas fa-filter"></i> Фильтры</h3>
+                    <div class="form-group">
+                        <label for="filter-status">Статус:</label>
+                        <select id="filter-status">
+                            <option value="all">Все</option>
+                            <option value="pending">Ожидает</option>
+                            <option value="in_progress">В работе</option>
+                            <option value="completed">Выполнено</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="filter-priority">Приоритет:</label>
+                        <select id="filter-priority">
+                            <option value="all">Все</option>
+                            <option value="low">Низкий</option>
+                            <option value="medium">Средний</option>
+                            <option value="high">Высокий</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="filter-category">Категория:</label>
+                        <select id="filter-category">
+                            <option value="all">Все</option>
+                        </select>
+                    </div>
+                    <button id="apply-filters" class="btn btn-secondary">
+                        <i class="fas fa-check"></i> Применить фильтры
+                    </button>
+                </div>
+            </div>
+
+            <div class="content">
+                <div class="tasks-header">
+                    <h2><i class="fas fa-list-check"></i> Мои задачи</h2>
+                    <div class="search-box">
+                        <input type="text" id="search-input" placeholder="Поиск задач...">
+                        <i class="fas fa-search"></i>
+                    </div>
+                </div>
+
+                <div class="tasks-container" id="tasks-container">
+                    <div class="loading" id="loading">
+                        <i class="fas fa-spinner fa-spin"></i> Загрузка задач...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Модальное окно для редактирования -->
+        <div id="edit-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3><i class="fas fa-edit"></i> Редактировать задачу</h3>
+                    <button class="close-btn">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form id="edit-form">
+                        <input type="hidden" id="edit-id">
+                        <div class="form-group">
+                            <input type="text" id="edit-title" placeholder="Название задачи" required>
+                        </div>
+                        <div class="form-group">
+                            <textarea id="edit-description" placeholder="Описание задачи"></textarea>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="edit-status">Статус:</label>
+                                <select id="edit-status">
+                                    <option value="pending">Ожидает</option>
+                                    <option value="in_progress">В работе</option>
+                                    <option value="completed">Выполнено</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="edit-priority">Приоритет:</label>
+                                <select id="edit-priority">
+                                    <option value="low">Низкий</option>
+                                    <option value="medium">Средний</option>
+                                    <option value="high">Высокий</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="edit-category">Категория:</label>
+                                <input type="text" id="edit-category" list="edit-categories-list">
+                                <datalist id="edit-categories-list"></datalist>
+                            </div>
+                            <div class="form-group">
+                                <label for="edit-due-date">Срок выполнения:</label>
+                                <input type="date" id="edit-due-date">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-assigned-email">Email назначения:</label>
+                            <input type="email" id="edit-assigned-email" placeholder="email@example.com">
+                        </div>
+                        <div class="modal-actions">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Сохранить
+                            </button>
+                            <button type="button" class="btn btn-email" id="send-email-btn">
+                                <i class="fas fa-paper-plane"></i> Отправить
+                            </button>
+                            <button type="button" class="btn btn-danger" id="delete-btn">
+                                <i class="fas fa-trash"></i> Удалить
+                            </button>
+                            <button type="button" class="btn btn-secondary close-btn">
+                                Отмена
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Модальное окно настроек email -->
+        <div id="email-settings-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3><i class="fas fa-cogs"></i> Настройки Email</h3>
+                    <button class="close-btn">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="email-status-card">
+                        <h4><i class="fas fa-info-circle"></i> Статус подключения</h4>
+                        <div id="email-settings-status">
+                            <p><i class="fas fa-spinner fa-spin"></i> Проверка настроек...</p>
+                        </div>
+                    </div>
+
+                    <div class="tabs">
+                        <button class="tab-btn active" data-tab="setup">Настройка</button>
+                        <button class="tab-btn" data-tab="test">Тестирование</button>
+                        <button class="tab-btn" data-tab="presets">Быстрые настройки</button>
+                    </div>
+
+                    <div class="tab-content active" id="tab-setup">
+                        <form id="email-settings-form">
+                            <div class="form-group">
+                                <label for="smtp-server">SMTP сервер:</label>
+                                <input type="text" id="smtp-server" placeholder="smtp.gmail.com" required>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="smtp-port">Порт:</label>
+                                    <input type="number" id="smtp-port" placeholder="587" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Безопасность:</label>
+                                    <div class="checkbox-group">
+                                        <label>
+                                            <input type="checkbox" id="use-tls" checked>
+                                            <span>Использовать TLS</span>
+                                        </label>
+                                        <label>
+                                            <input type="checkbox" id="use-ssl">
+                                            <span>Использовать SSL</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="email-username">Email (логин):</label>
+                                <input type="email" id="email-username" placeholder="ваш@gmail.com" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="email-password">Пароль:</label>
+                                <div class="password-input">
+                                    <input type="password" id="email-password" placeholder="Пароль приложения" required>
+                                    <button type="button" class="toggle-password" id="toggle-password">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                                <small class="hint">Для Gmail используйте пароль приложения</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="sender-email">Отправитель (email):</label>
+                                <input type="email" id="sender-email" placeholder="ваш@gmail.com" required>
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> Сохранить настройки
+                                </button>
+                                <button type="button" class="btn btn-danger" id="delete-settings-btn">
+                                    <i class="fas fa-trash"></i> Удалить настройки
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="tab-content" id="tab-test">
+                        <form id="test-email-form">
+                            <div class="form-group">
+                                <label for="test-email">Тестовый email:</label>
+                                <input type="email" id="test-email" placeholder="test@example.com" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-paper-plane"></i> Отправить тестовое письмо
+                            </button>
+                        </form>
+                        <div class="test-result" id="test-result"></div>
+                    </div>
+
+                    <div class="tab-content" id="tab-presets">
+                        <div class="presets-grid" id="presets-container">
+                            <!-- Пресеты будут загружены динамически -->
+                        </div>
+                    </div>
+
+                    <div class="instructions">
+                        <h4><i class="fas fa-book"></i> Как получить пароль приложения</h4>
+                        <div class="instructions-grid">
+                            <div class="instruction-card">
+                                <h5><i class="fab fa-google"></i> Для Gmail</h5>
+                                <ol>
+                                    <li>Включите двухфакторную аутентификацию</li>
+                                    <li>Перейдите на <a href="https://myaccount.google.com/apppasswords" target="_blank">страницу паролей приложений</a></li>
+                                    <li>Создайте новый пароль для "Почта"</li>
+                                    <li>Используйте его в поле "Пароль" выше</li>
+                                </ol>
+                            </div>
+                            <div class="instruction-card">
+                                <h5><i class="fab fa-yandex"></i> Для Яндекс</h5>
+                                <ol>
+                                    <li>Включите двухфакторную аутентификацию</li>
+                                    <li>Создайте пароль приложения в настройках безопасности</li>
+                                    <li>Используйте его в поле "Пароль"</li>
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
